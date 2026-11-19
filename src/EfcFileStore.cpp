@@ -110,6 +110,20 @@ namespace efc
         return isDir ? 2 : 1;
     }
     void IFileStore::dirClose() { _dir.close(); }
+    bool IFileStore::forEach(const char *path, bool (*fn)(void *ctx, const char *name, bool isDir, uint64_t size), void *ctx)
+    {
+        File d = extFlashModule.open((path && *path) ? path : "/", "r");
+        if (!d) return false;
+        for (File e = d.openNextFile(); e; e = d.openNextFile())
+        {
+            const bool isDir = e.isDirectory();
+            const bool more = fn(ctx, e.name(), isDir, isDir ? 0 : (uint64_t)e.size());
+            e.close();
+            if (!more) break;
+        }
+        d.close();
+        return true;
+    }
 
     bool IFileStore::remove(const char *path) { return extFlashModule.remove(path); }
     bool IFileStore::mkdir(const char *path) { return extFlashModule.mkdir(path); }
